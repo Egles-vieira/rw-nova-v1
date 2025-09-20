@@ -1,0 +1,72 @@
+// ==========================================
+// DOCKER COMPOSE PARA DESENVOLVIMENTO
+// ==========================================
+// backend/docker-compose.jobs.yml
+
+version: '3.8'
+
+services:
+  road-rw-jobs:
+    build:
+      context: .
+      dockerfile: Dockerfile.jobs
+    container_name: road-rw-jobs
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=road_rw
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - JOBS_ENABLED=true
+      - LOG_LEVEL=info
+    volumes:
+      - ./logs:/app/logs
+      - ./config:/app/config
+    depends_on:
+      - postgres
+    networks:
+      - road-rw-network
+    healthcheck:
+      test: ["CMD", "node", "scripts/health-check.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: road-rw-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=road_rw
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - road-rw-network
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: road-rw-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - road-rw-network
+    ports:
+      - "6379:6379"
+
+networks:
+  road-rw-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

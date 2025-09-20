@@ -1,0 +1,213 @@
+// ==========================================
+// 1. SETUP E INICIALIZAÇÃO DO SISTEMA
+// ==========================================
+// backend/src/services/jobs/job-manager.service.js
+
+const logger = require('../../config/logger');
+const JobSchedulerService = require('./job-scheduler.service');
+const JobsRepository = require('../../repositories/jobs.repository');
+const MonitoringRepository = require('../../repositories/monitoring.repository');
+const TransportadorasRepository = require('../../repositories/transportadoras.repository');
+const NotasRepository = require('../../repositories/notas.repository');
+const OcorrenciasRepository = require('../../repositories/ocorrencias.repository');
+const SettingsRepository = require('../../repositories/settings.repository');
+
+class JobManagerService {
+  constructor(database) {
+    this.database = database;
+    this.scheduler = null;
+    this.repositories = null;
+    this.isInitialized = false;
+  }
+
+  // Inicializar o sistema completo de jobs
+  async initialize() {
+    try {
+      logger.info('Inicializando sistema de jobs...');
+
+      // Instanciar repositories
+      this.repositories = {
+        jobs: new JobsRepository(this.database),
+        monitoring: new MonitoringRepository(this.database),
+        transportadoras: new TransportadorasRepository(this.database),
+        notas: new NotasRepository(this.database),
+        ocorrencias: new OcorrenciasRepository(this.database),
+        settings: new SettingsRepository(this.database)
+      };
+
+      // Criar configurações iniciais se não existirem
+      await this.setupInitialConfig();
+
+      // Instanciar e inicializar scheduler
+      this.scheduler = new JobSchedulerService(this.repositories);
+      await this.scheduler.initialize();
+
+      this.isInitialized = true;
+      logger.info('Sistema de jobs inicializado com sucesso');
+
+      return this.scheduler;
+
+    } catch (error) {
+      logger.error('Erro ao inicializar sistema de jobs:', error);
+      throw error;
+    }
+  }
+
+  // Configurar configurações iniciais
+  async setupInitialConfig() {
+    const settingsRepo = new SettingsRepository(this.database);
+    try {
+      // Verificar se já existem configurações
+      const existingConfig = await this.repositories.settings.findBySlug('integration_config');
+      
+      if (!existingConfig) {
+        logger.info('Criando configurações iniciais...');
+        
+        const defaultConfig = {
+          enabled: true,
+          poll_interval: 300, // 5 minutos
+          rate_limits: {
+            jamef: { requests: 100, per: 'minute' },
+            braspress: { requests: 500, per: 'hour' },
+            tnt: { requests: 200, per: 'minute' }
+          },
+          timeouts: {
+            default: 30000,
+            jamef: 15000,
+            braspress: 45000,
+            tnt: 20000
+          },
+          retry: {
+            attempts: 3,
+            exponential: true,
+            base_delay: 1000
+          },
+          circuit_breaker: {
+            enabled: true,
+            failure_threshold: 5,
+            reset_timeout: 60000
+          }
+        };
+
+        await this.repositories.settings.create({
+          slug: 'integration_config',
+          env: 'production',
+          settings: defaultConfig
+        });
+
+        logger.info('Configurações iniciais criadas');
+      }
+
+      // Configurações de monitoramento
+      const monitoringConfig = await this.repositories.monitoring.getMonitoringConfig();
+      if (!monitoringConfig || Object.keys(monitoringConfig).length === 0) {
+        const defaultMonitoringConfig = {
+          alertas: {
+            erro_threshold: 5,
+            inatividade_hours: 4,
+            email_notifications: false,
+            webhook_url: null
+          },
+          dashboard: {
+            periodo_padrao: 7,
+            refresh_interval: 30,
+            auto_refresh: true
+          },
+          logs: {
+            retention_days: 30,
+            max_log_size: 1000000
+          }
+        };
+
+        await this.repositories.monitoring.updateMonitoringConfig(defaultMonitoringConfig);
+        logger.info('Configurações de monitoramento criadas');
+      }
+
+    } catch (error) {
+      logger.error('Erro ao configurar configurações iniciais:', error);
+      throw error;
+    }
+  }
+
+  // Obter instância do scheduler
+  getScheduler() {
+    if (!this.isInitialized) {
+      throw new Error('Sistema de jobs não foi inicializado');
+    }
+    return this.scheduler;
+  }
+
+  // Obter repositories
+  getRepositories() {
+    if (!this.isInitialized) {
+      throw new Error('Sistema de jobs não foi inicializado');
+    }
+    return this.repositories;
+  }
+
+  // Parar sistema
+  async shutdown() {
+    try {
+      if (this.scheduler) {
+        await this.scheduler.stop();
+        logger.info('Scheduler parado');
+      }
+
+      this.isInitialized = false;
+      logger.info('Sistema de jobs finalizado');
+
+    } catch (error) {
+      logger.error('Erro ao finalizar sistema de jobs:', error);
+    }
+  }
+
+  // Status do sistema
+  getSystemStatus() {
+    return {
+      initialized: this.isInitialized,
+      scheduler: this.scheduler ? this.scheduler.getStatus() : null,
+      repositories: this.repositories ? Object.keys(this.repositories) : []
+    };
+  }
+
+  // Métodos para status e saúde dos jobs
+  async getHealthStatus() {
+    try {
+      if (!this.isInitialized) {
+        return { status: 'not_initialized' };
+      }
+
+      return {
+        status: 'running',
+        initialized: this.isInitialized,
+        scheduler: this.scheduler ? 'active' : 'inactive',
+        repositories: Object.keys(this.repositories || {}),
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      return { 
+        status: 'error', 
+        message: error.message,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  async getStatus() {
+    return await this.getHealthStatus();
+  }
+
+  async getIntegrationsStatus() {
+    try {
+      if (!this.repositories || !this.repositories.monitoring) {
+        return [];
+      }
+      return [];
+    } catch (error) {
+      return [];
+    }
+  }
+}
+
+module.exports = JobManagerService;
+

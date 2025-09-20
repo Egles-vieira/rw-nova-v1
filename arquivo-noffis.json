@@ -1,0 +1,64 @@
+{
+  "notfis": [
+    {
+      "peso_calculo": 0.0,
+      "observacoes": "| Rep: 121 - PINHEIRO & SCRIVANTE REP. COMERCIAIS LTD | Ped Cliente: 2413919 Rota: 46509 | N Ped: 2413919 EXP\/ | Transp: 46509 - FEDEX_TNT | Cod Cliente:56440 |REDUCAO DO ICMS PARA 7% CONF.DEC.Nº.\r",
+      "previsao_entrega": "2025-07-15T09:19:17.000000Z",
+      "chave_nf": "35250761418042000131550040018757221276116250",
+      "ser": 4,
+      "emi_nf": "2025-07-04T00:00:00.000000Z",
+      "nro": 1875722,
+      "nro_pedido": 2413919,
+      "peso_real": 1.032,
+      "cod_rep": 121,
+      "nome_rep": "PINHEIRO & SCRIVANTE REP. COMERCIAIS LTD",
+      "qtd_volumes": 1,
+      "metro_cubico": 0.01132866,
+      "mensagem": "",
+      "valor": 748.14,
+      "data_entrega": "",
+      "status_nf": "pedido reservado",
+      "nf_retida": false,
+      "valor_frete": 0.0,
+      "recebedor": [
+        {
+          "cod_cliente": "56440",
+          "documento": "24876491000369",
+          "nome": "POLICLINICA QUALITY LTDA",
+          "endereco": "R RIACHUELO,685",
+          "bairro": "CAVALHADA I",
+          "cep": "78216-010",
+          "cidade": "CÁCERES",
+          "uf": "MT",
+          "contato": "65 32236048"
+        }
+      ],
+      "endereco_entrega": [
+        {
+          "endereco": "R RIACHUELO,685",
+          "bairro": "CAVALHADA I",
+          "cep": "78216-010",
+          "cidade": "CÁCERES",
+          "uf": "MT",
+          "doca": "71",
+          "rota": ""
+        }
+      ],
+      "remetente": [
+        {
+          "documento": "61418042000131",
+          "nome": "CIRURGICA FERNANDES C.MAT.CIR.HO.SO.LTDA"
+        }
+      ],
+      "transportadora": [
+        {
+          "cnpj": "95591723000119",
+          "nome": "TNT MERCURIO CARGAS E ENCOMENDAS EXPRESSAS LTDA",
+          "endereco": "AV. MARGINAL DIREITA DO TIETE, 2500",
+          "municipio": "SÃO PAULO",
+          "uf": "SP"
+        }
+      ]
+    }
+  ]
+}

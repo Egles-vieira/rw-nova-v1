@@ -1,0 +1,456 @@
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
+
+const config = require('./src/config/env');
+const logger = require('./src/config/logger');
+const db = require('./src/database/connection');
+
+// ========================================
+// IMPORTAR ROTAS EXISTENTES
+// ========================================
+const authRoutes = require('./src/routes/auth.routes');
+const transportadorasRoutes = require('./src/routes/transportadoras.routes');
+const clientesRoutes = require('./src/routes/clientes.routes');
+const embarcadoresRoutes = require('./src/routes/embarcadores.routes');
+const motoristasRoutes = require('./src/routes/motoristas.routes'); 
+const notasFiscais = require('./src/routes/notas-fiscais.routes');
+const enderecoEntregaRoutes = require('./src/routes/endereco-entrega.routes');
+const romaneios = require('./src/routes/romaneios.routes');
+const ocorrencias = require('./src/routes/ocorrencias.routes');
+const transportadoraCodigo = require('./src/routes/transportadora-codigo-ocorrencia.routes');
+const tabelaOcorrenciasRoutes = require('./src/routes/codigo-ocorrencias.routes');
+
+// ========================================
+// IMPORTAR ROTAS DAS APIs EXTERNAS (opcional - criar quando os arquivos existirem)
+// ========================================
+// Comentadas até você criar os arquivos
+// const integrationsRoutes = require('./src/routes/integrations.routes');
+// const externalApisRoutes = require('./src/routes/external-apis.routes');
+// const webhooksRoutes = require('./src/routes/webhooks.routes');
+// const logsRoutes = require('./src/routes/logs.routes');
+
+const app = express();
+
+// Variaveis do jobs e agendamento
+const JobManagerService = require('./src/services/jobs/job-manager.service');
+const { injectJobControllers, requireAdmin, jobsRateLimit } = require('./src/middlewares/jobs.middleware');
+
+// Adicionar estas importações no início do arquivo, após as outras importações
+const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
+const swaggerDefinition = require('./swaggerDef');
+
+// Configuração do Swagger (adicionar após a configuração dos middlewares e antes das rotas)
+const options = {
+  definition: swaggerDefinition,
+  apis: [
+    './src/routes/*.js', // Caminho para os arquivos de rotas
+    './src/controllers/*.js' // Opcional: incluir controllers se tiver documentação lá
+  ],
+};
+
+const swaggerSpec = swaggerJsdoc(options);
+
+// Customização da interface do Swagger UI
+const swaggerUiOptions = {
+  customCss: `
+    .swagger-ui .topbar { display: none; }
+    .swagger-ui .info { margin: 20px 0; }
+    .swagger-ui .scheme-container { background: #fafafa; border: 1px solid #d3d3d3; }
+  `,
+  customSiteTitle: "Road-RW API Documentation",
+  customfavIcon: "/favicon.ico",
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayOperationId: false,
+    defaultModelsExpandDepth: 1,
+    defaultModelExpandDepth: 1,
+    docExpansion: 'none',
+    filter: true,
+    showExtensions: true,
+    showCommonExtensions: true,
+    tryItOutEnabled: true
+  }
+};
+
+// Middlewares de segurança
+app.use(helmet({
+  contentSecurityPolicy: false // Desabilitar CSP para desenvolvimento
+}));
+
+// Configurar CORS
+app.use(cors({
+  origin: config.cors.origin,
+  credentials: config.cors.credentials,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Compressão de resposta
+app.use(compression());
+
+// Rate limiting global
+const globalLimiter = rateLimit({
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.max,
+  message: {
+    success: false,
+    message: 'Muitas requisições. Tente novamente em alguns minutos.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+app.use(globalLimiter);
+
+// Rate limiting específico para auth
+const authLimiter = rateLimit({
+  windowMs: config.rateLimit.windowMs,
+  max: config.rateLimit.authMax,
+  message: {
+    success: false,
+    message: 'Muitas tentativas de login. Tente novamente em alguns minutos.'
+  }
+});
+
+// Body parser
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Middleware de log de requisições
+app.use((req, res, next) => {
+  const start = Date.now();
+  
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    logger.info(`${req.method} ${req.originalUrl}`, {
+      statusCode: res.statusCode,
+      duration: `${duration}ms`,
+      userAgent: req.get('User-Agent'),
+      ip: req.ip
+    });
+  });
+  
+  next();
+});
+
+// ========================================
+// HEALTH CHECK ESTENDIDO
+// ========================================
+app.get('/health', async (req, res) => {
+  try {
+    const dbHealth = await db.healthCheck();
+    
+    // Verificar saúde dos jobs
+    let jobsHealth = { status: 'unknown' };
+    if (jobManager && jobManager.isInitialized) {
+      try {
+        jobsHealth = await jobManager.getHealthStatus();
+      } catch (error) {
+        jobsHealth = { status: 'error', message: error.message };
+      }
+    }
+    
+    res.json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      version: process.env.npm_package_version || '1.0.0',
+      environment: config.nodeEnv,
+      uptime: process.uptime(),
+      database: dbHealth,
+      jobs: jobsHealth
+    });
+  } catch (error) {
+    logger.error('Health check failed:', error);
+    res.status(503).json({
+      status: 'ERROR',
+      timestamp: new Date().toISOString(),
+      error: 'Service unavailable'
+    });
+  }
+});
+
+// ========================================
+// STATUS GERAL DO SISTEMA
+// ========================================
+app.get('/api/system/status', async (req, res) => {
+  try {
+    const status = {
+      database: await db.healthCheck(),
+      jobs: jobManager ? await jobManager.getStatus() : { status: 'not_initialized' },
+      integrations: jobManager ? await jobManager.getIntegrationsStatus() : []
+    };
+    
+    res.json({
+      success: true,
+      data: status
+    });
+  } catch (error) {
+    logger.error('Erro ao obter status do sistema:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao obter status do sistema'
+    });
+  }
+});
+
+// ========================================
+// ROTAS DA API EXISTENTES
+// ========================================
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/transportadoras', transportadorasRoutes);
+app.use('/api/clientes', clientesRoutes);
+app.use('/api/embarcadores', embarcadoresRoutes);
+app.use('/api/motoristas', motoristasRoutes);
+app.use('/api/notas-fiscais', notasFiscais);
+app.use('/api/enderecos-entrega', enderecoEntregaRoutes);
+app.use('/api/romaneios', romaneios);
+app.use('/api/ocorrencias', ocorrencias);
+app.use('/api/transportadoracodigo', transportadoraCodigo);
+app.use('/api/tabelacodigosocorrencia', tabelaOcorrenciasRoutes);
+
+// ========================================
+// ROTAS DAS APIs EXTERNAS
+// ========================================
+// Descomente conforme você criar os arquivos de rotas
+
+
+
+
+
+
+// ========================================
+// SWAGGER DOCUMENTATION
+// ========================================
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
+
+// Endpoint para baixar a especificação JSON
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+
+// Redirecionamento da raiz para a documentação (opcional)
+app.get('/', (req, res) => {
+  res.redirect('/api-docs');
+});
+
+// ========================================
+// MIDDLEWARE DE ERRO
+// ========================================
+
+// Middleware para rotas não encontradas
+app.use('/api/*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Endpoint não encontrado',
+    path: req.originalUrl
+  });
+});
+
+// Middleware de tratamento de erros global
+app.use((error, req, res, next) => {
+  logger.error('Erro não tratado:', {
+    error: error.message,
+    stack: error.stack,
+    url: req.originalUrl,
+    method: req.method,
+    ip: req.ip
+  });
+
+  // Erro de validação do Joi
+  if (error.isJoi) {
+    return res.status(400).json({
+      success: false,
+      message: 'Dados inválidos',
+      errors: error.details.map(detail => ({
+        field: detail.path.join('.'),
+        message: detail.message
+      }))
+    });
+  }
+
+  // Erro de sintaxe JSON
+  if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
+    return res.status(400).json({
+      success: false,
+      message: 'JSON inválido'
+    });
+  }
+
+  // Erro padrão
+  res.status(500).json({
+    success: false,
+    message: 'Erro interno do servidor',
+    error: config.nodeEnv === 'development' ? error.message : 'Erro interno'
+  });
+});
+
+// ========================================
+// INICIALIZAÇÃO DOS JOBS
+// ========================================
+let jobManager;
+
+async function initializeJobs() {
+  try {
+    jobManager = new JobManagerService(db);
+    await jobManager.initialize();
+    logger.info('Sistema de jobs inicializado com sucesso');
+    
+    // Configurar rotas dos jobs após inicialização
+    app.use('/api/jobs', require('./src/routes/jobs.routes')(jobManager));
+    app.use('/api/monitoring', require('./src/routes/monitoring.routes')(jobManager));
+    
+  } catch (error) {
+    logger.error('Erro ao inicializar sistema de jobs:', error);
+    // Não parar o servidor, mas marcar como indisponível
+  }
+}
+
+// ========================================
+// INICIALIZAÇÃO DO SERVIDOR
+// ========================================
+const startServer = async () => {
+  try {
+    // Testar conexão com o banco
+    const dbConnected = await db.testConnection();
+    if (!dbConnected) {
+      logger.error('Falha na conexão com o banco de dados');
+      process.exit(1);
+    }
+
+    // Inicializar sistema de jobs
+    await initializeJobs();
+
+    // Iniciar servidor
+    const server = app.listen(config.port, () => {
+      logger.info(`🚀 Servidor iniciado na porta ${config.port}`);
+      logger.info(`🌍 Ambiente: ${config.nodeEnv}`);
+      logger.info(`📊 Health check: http://localhost:${config.port}/health`);
+      logger.info(`⚙️  System status: http://localhost:${config.port}/api/system/status`);
+      
+      if (config.nodeEnv === 'development') {
+        logger.info(`📚 API Docs: http://localhost:${config.port}/api-docs`);
+        logger.info(`🔧 Jobs: http://localhost:${config.port}/api/jobs/status`);
+        logger.info(`📈 Monitoring: http://localhost:${config.port}/api/monitoring/dashboard`);
+      }
+    });
+
+    // Graceful shutdown
+    const gracefulShutdown = async (signal) => {
+      logger.info(`Recebido sinal ${signal}. Iniciando shutdown graceful...`);
+      
+      server.close(async () => {
+        logger.info('Servidor HTTP fechado');
+        
+        try {
+          if (jobManager && jobManager.shutdown) {
+            await jobManager.shutdown();
+            logger.info('Jobs parados com sucesso');
+          }
+          
+          if (db && db.close) {
+            await db.close();
+            logger.info('Conexões do banco fechadas');
+          }
+        } catch (error) {
+          logger.error('Erro ao fechar conexões:', error);
+        }
+        
+        logger.info('Shutdown concluído');
+        process.exit(0);
+      });
+
+      // Forçar saída após 30 segundos
+      setTimeout(() => {
+        logger.error('Forçando saída após timeout');
+        process.exit(1);
+      }, 30000);
+    };
+
+    // Escutar sinais de sistema
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+    // Tratar erros não capturados
+    process.on('uncaughtException', (error) => {
+      logger.error('Exceção não capturada:', error);
+      gracefulShutdown('uncaughtException');
+    });
+
+    process.on('unhandledRejection', (reason, promise) => {
+      logger.error('Promise rejeitada não tratada:', { reason, promise });
+      gracefulShutdown('unhandledRejection');
+    });
+
+  } catch (error) {
+    logger.error('Erro ao iniciar servidor:', error);
+    process.exit(1);
+  }
+};
+
+// Iniciar servidor apenas se não estiver sendo importado
+if (require.main === module) {
+  startServer();
+}
+
+
+// ========================================
+// STATUS GERAL DO SISTEMA
+// ========================================
+app.get('/api/system/status', async (req, res) => {
+  try {
+    const status = {
+      server: {
+        status: 'running',
+        port: config.port,
+        environment: config.nodeEnv,
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+      },
+      database: await db.healthCheck(),
+      jobs: { status: 'not_initialized' },
+      integrations: []
+    };
+
+    // Verificar jobs se disponível
+    if (jobManager && jobManager.isInitialized) {
+      try {
+        if (jobManager.getHealthStatus) {
+          status.jobs = await jobManager.getHealthStatus();
+        } else if (jobManager.getStatus) {
+          status.jobs = await jobManager.getStatus();
+        } else {
+          status.jobs = { 
+            status: 'active', 
+            initialized: jobManager.isInitialized 
+          };
+        }
+
+        // Verificar integrações se disponível
+        if (jobManager.getIntegrationsStatus) {
+          status.integrations = await jobManager.getIntegrationsStatus();
+        }
+      } catch (error) {
+        status.jobs = { status: 'error', message: error.message };
+      }
+    }
+    
+    res.json({
+      success: true,
+      data: status
+    });
+  } catch (error) {
+    console.error('Erro ao obter status do sistema:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao obter status do sistema',
+      error: error.message
+    });
+  }
+});
+
+module.exports = app;

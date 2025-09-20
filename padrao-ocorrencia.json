@@ -1,0 +1,19 @@
+{   
+  "ocorrencias": [
+        {
+            "nro_nf": "1875722",
+            "dataHoraEvento": "2025-09-17T19:25:32.416Z",
+            "dataHoraEnvio": "2025-09-17T19:25:32.416Z",
+            "codigo": "82",
+            "descricao": "SAIDA DA UNIDADE",
+            "complemento": "Saida da unidade JUNDIAI em 07/11/19, 00:18h. Previsao de chegada na unidade FEIRA DE SANTANA em 09/11/19, 06:16h.",
+            "nomeRecebedor": "carlos roberto",
+            "docRecebedor": "845.879.625-85",    
+            "latitude": 0,
+            "longitude": 0,
+            "linkComprovante": "https://heavycomprovante.nyc3.cdn.digitaloceanspaces.com/comprovantes/cfernandes/1215192_2d5b30de76e1daa1fc950f35d34566b7.pdf",
+            "dataHoraAgendamento": "2025-09-17T19:25:32.416Z",
+            "novaDataPrevisao": "2025-09-17T19:25:32.416Z"
+        }        
+   ]
+}

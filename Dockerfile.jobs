@@ -1,0 +1,42 @@
+
+// ==========================================
+// CONFIGURAÇÃO DOCKER (OPCIONAL)
+// ==========================================
+// backend/Dockerfile.jobs
+
+FROM node:18-alpine
+
+# Instalar dependências do sistema
+RUN apk add --no-cache \
+    curl \
+    postgresql-client
+
+# Criar diretório da aplicação
+WORKDIR /app
+
+# Copiar arquivos de dependência
+COPY package*.json ./
+
+# Instalar dependências
+RUN npm ci --only=production
+
+# Copiar código fonte
+COPY . .
+
+# Criar diretórios necessários
+RUN mkdir -p logs
+
+# Variáveis de ambiente
+ENV NODE_ENV=production
+ENV LOG_LEVEL=info
+
+# Expor porta (se necessário para health check)
+EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD node scripts/health-check.js
+
+# Comando padrão
+CMD ["npm", "run", "jobs:prod"]
+

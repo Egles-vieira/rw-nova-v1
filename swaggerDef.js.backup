@@ -1,0 +1,191 @@
+const config = require('./src/config/env');
+
+const swaggerDefinition = {
+  openapi: '3.0.0',
+  info: {
+    title: 'Road-RW API - Sistema de Gestão Logística',
+    version: '1.0.0',
+    description: 'API completa para gestão de transportadoras, clientes, motoristas e embarcadores',
+    contact: {
+      name: 'Road-RW Team',
+      email: 'contato@roadrw.com'
+    },
+    license: {
+      name: 'MIT',
+      url: 'https://opensource.org/licenses/MIT'
+    }
+  },
+  servers: [
+    {
+      url: `http://localhost:${config.port}/api`,
+      description: 'Servidor de Desenvolvimento'
+    },
+    {
+      url: 'https://api.roadrw.com/api',
+      description: 'Servidor de Produção'
+    }
+  ],
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Token JWT obtido através do endpoint de login'
+      }
+    },
+    schemas: {
+      Error: {
+        type: 'object',
+        properties: {
+          success: {
+            type: 'boolean',
+            example: false
+          },
+          message: {
+            type: 'string',
+            example: 'Mensagem de erro'
+          },
+          errors: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                field: {
+                  type: 'string'
+                },
+                message: {
+                  type: 'string'
+                }
+              }
+            }
+          }
+        }
+      },
+      Success: {
+        type: 'object',
+        properties: {
+          success: {
+            type: 'boolean',
+            example: true
+          },
+          message: {
+            type: 'string',
+            example: 'Operação realizada com sucesso'
+          },
+          data: {
+            type: 'object'
+          }
+        }
+      },
+      Pagination: {
+        type: 'object',
+        properties: {
+          success: {
+            type: 'boolean',
+            example: true
+          },
+          data: {
+            type: 'array',
+            items: {}
+          },
+          pagination: {
+            type: 'object',
+            properties: {
+              page: {
+                type: 'integer',
+                example: 1
+              },
+              limit: {
+                type: 'integer',
+                example: 20
+              },
+              total: {
+                type: 'integer',
+                example: 100
+              },
+              pages: {
+                type: 'integer',
+                example: 5
+              }
+            }
+          }
+        }
+      }
+    },
+    responses: {
+      UnauthorizedError: {
+        description: 'Token de acesso inválido ou expirado',
+        content: {
+          'application/json': {
+            schema: {
+              $ref: '#/components/schemas/Error'
+            }
+          }
+        }
+      },
+      ForbiddenError: {
+        description: 'Acesso negado - privilégios insuficientes',
+        content: {
+          'application/json': {
+            schema: {
+              $ref: '#/components/schemas/Error'
+            }
+          }
+        }
+      },
+      NotFoundError: {
+        description: 'Recurso não encontrado',
+        content: {
+          'application/json': {
+            schema: {
+              $ref: '#/components/schemas/Error'
+            }
+          }
+        }
+      },
+      ValidationError: {
+        description: 'Erro de validação dos dados enviados',
+        content: {
+          'application/json': {
+            schema: {
+              $ref: '#/components/schemas/Error'
+            }
+          }
+        }
+      }
+    }
+  },
+  tags: [
+    {
+      name: 'Autenticação',
+      description: 'Operações de autenticação e autorização'
+    },
+    {
+      name: 'Clientes',
+      description: 'Gestão de clientes'
+    },
+    {
+      name: 'Transportadoras',
+      description: 'Gestão de transportadoras'
+    },
+    {
+      name: 'Embarcadores',
+      description: 'Gestão de embarcadores'
+    },
+    {
+      name: 'Motoristas',
+      description: 'Gestão de motoristas'
+    },
+    {
+      name: 'Endereços de Entrega',
+      description: 'Gestão de endereços de entrega'
+    },
+    {
+      name: 'Notas Fiscais',
+      description: 'Gestão de notas fiscais'
+    }
+  ]
+};
+
+module.exports = swaggerDefinition;

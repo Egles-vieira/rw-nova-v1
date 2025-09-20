@@ -1,0 +1,1742 @@
+{
+  "info": {
+    "name": "API Gestão de Transportes",
+    "description": "Collection completa para testes da API de gestão de transportes e logística",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "api_prefix",
+      "value": "/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Auto-refresh token se expirado",
+          "if (pm.collectionVariables.get('token') && pm.collectionVariables.get('refresh_token')) {",
+          "  // Adicionar lógica de refresh se necessário",
+          "}"
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Autenticação",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const response = pm.response.json();",
+                  "  if (response.token) {",
+                  "    pm.collectionVariables.set('token', response.token);",
+                  "  }",
+                  "  if (response.refreshToken) {",
+                  "    pm.collectionVariables.set('refresh_token', response.refreshToken);",
+                  "  }",
+                  "  pm.test('Login realizado com sucesso', function() {",
+                  "    pm.expect(response.success).to.be.true;",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@empresa.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "auth", "login"]
+            },
+            "description": "Realiza login na API e obtém o token de autenticação"
+          }
+        },
+        {
+          "name": "Registrar Usuário",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João Silva\",\n  \"email\": \"joao@empresa.com\",\n  \"password\": \"senha123\",\n  \"confirmPassword\": \"senha123\",\n  \"role\": \"operador\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Renovar Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Esqueci Minha Senha",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario@empresa.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/auth/forgot-password",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "auth", "forgot-password"]
+            }
+          }
+        },
+        {
+          "name": "Redefinir Senha",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset_token_aqui\",\n  \"password\": \"nova_senha123\",\n  \"confirmPassword\": \"nova_senha123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/auth/reset-password",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "auth", "reset-password"]
+            }
+          }
+        },
+        {
+          "name": "Alterar Senha",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"senha_atual\",\n  \"newPassword\": \"nova_senha123\",\n  \"confirmPassword\": \"nova_senha123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/auth/change-password",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "auth", "change-password"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚛 Transportadoras",
+      "item": [
+        {
+          "name": "Listar Transportadoras",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/transportadoras?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "transportadoras"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"},
+                {"key": "nome", "value": "", "disabled": true},
+                {"key": "uf", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar Transportadoras",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/transportadoras/search?q=transportadora",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "transportadoras", "search"],
+              "query": [
+                {"key": "q", "value": "transportadora"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar por CNPJ",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/transportadoras/cnpj/12.345.678/0001-90",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "transportadoras", "cnpj", "12.345.678/0001-90"]
+            }
+          }
+        },
+        {
+          "name": "Buscar por UF",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/transportadoras/uf/SP",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "transportadoras", "uf", "SP"]
+            }
+          }
+        },
+        {
+          "name": "Obter Transportadora",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/transportadoras/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "transportadoras", "1"]
+            }
+          }
+        },
+        {
+          "name": "Criar Transportadora",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Transportadora ABC\",\n  \"cnpj\": \"12.345.678/0001-90\",\n  \"inscricao_estadual\": \"123456789\",\n  \"endereco\": \"Rua das Transportadoras, 123\",\n  \"bairro\": \"Centro\",\n  \"cidade\": \"São Paulo\",\n  \"cep\": \"01234-567\",\n  \"uf\": \"SP\",\n  \"telefone\": \"(11) 1234-5678\",\n  \"email\": \"contato@transportadoraabc.com\",\n  \"ativa\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/transportadoras",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "transportadoras"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Transportadora",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Transportadora ABC Atualizada\",\n  \"telefone\": \"(11) 9876-5432\",\n  \"email\": \"novo@transportadoraabc.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/transportadoras/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "transportadoras", "1"]
+            }
+          }
+        },
+        {
+          "name": "Deletar Transportadora",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/transportadoras/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "transportadoras", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👥 Clientes",
+      "item": [
+        {
+          "name": "Listar Clientes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/clientes?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "clientes"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"},
+                {"key": "nome", "value": "", "disabled": true},
+                {"key": "documento", "value": "", "disabled": true},
+                {"key": "uf", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar Clientes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/clientes/search?q=cliente",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "clientes", "search"],
+              "query": [
+                {"key": "q", "value": "cliente"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Documento",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/clientes/documento/12.345.678/0001-90",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "clientes", "documento", "12.345.678/0001-90"]
+            }
+          }
+        },
+        {
+          "name": "Buscar por UF",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/clientes/uf/SP",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "clientes", "uf", "SP"]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Cidade",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/clientes/cidade/São Paulo",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "clientes", "cidade", "São Paulo"]
+            }
+          }
+        },
+        {
+          "name": "Obter Cliente",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/clientes/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "clientes", "1"]
+            }
+          }
+        },
+        {
+          "name": "Obter Cliente com Estatísticas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/clientes/1/stats",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "clientes", "1", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Criar Cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documento\": \"12.345.678/0001-90\",\n  \"cod_cliente\": \"CLI001\",\n  \"nome\": \"Cliente ABC Ltda\",\n  \"inscricao_estadual\": \"123456789\",\n  \"endereco\": \"Rua dos Clientes, 456\",\n  \"bairro\": \"Centro\",\n  \"cidade\": \"São Paulo\",\n  \"cep\": \"01234-567\",\n  \"uf\": \"SP\",\n  \"telefone\": \"(11) 1234-5678\",\n  \"email\": \"contato@clienteabc.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/clientes",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "clientes"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Cliente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Cliente ABC Atualizado\",\n  \"telefone\": \"(11) 9876-5432\",\n  \"email\": \"novo@clienteabc.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/clientes/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "clientes", "1"]
+            }
+          }
+        },
+        {
+          "name": "Deletar Cliente",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/clientes/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "clientes", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏭 Embarcadores",
+      "item": [
+        {
+          "name": "Listar Embarcadores",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/embarcadores?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "embarcadores"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"},
+                {"key": "nome", "value": "", "disabled": true},
+                {"key": "documento", "value": "", "disabled": true},
+                {"key": "cidade", "value": "", "disabled": true},
+                {"key": "uf", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar Embarcadores",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/embarcadores/search?q=embarcador",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "embarcadores", "search"],
+              "query": [
+                {"key": "q", "value": "embarcador"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Documento",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/embarcadores/documento/11.222.333/0001-81",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "embarcadores", "documento", "11.222.333/0001-81"]
+            }
+          }
+        },
+        {
+          "name": "Buscar por UF",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/embarcadores/uf/SP",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "embarcadores", "uf", "SP"]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Cidade",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/embarcadores/cidade/São Paulo",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "embarcadores", "cidade", "São Paulo"]
+            }
+          }
+        },
+        {
+          "name": "Obter Embarcador",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/embarcadores/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "embarcadores", "1"]
+            }
+          }
+        },
+        {
+          "name": "Obter Embarcador com Depósitos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/embarcadores/1/depositos",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "embarcadores", "1", "depositos"]
+            }
+          }
+        },
+        {
+          "name": "Criar Embarcador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documento\": \"11.222.333/0001-81\",\n  \"nome\": \"Empresa ABC Ltda\",\n  \"inscricao_estadual\": \"123456789\",\n  \"cnpj\": \"11.222.333/0001-81\",\n  \"endereco\": \"Rua das Indústrias, 456\",\n  \"bairro\": \"Distrito Industrial\",\n  \"cidade\": \"São Paulo\",\n  \"cep\": \"01234-567\",\n  \"uf\": \"SP\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/embarcadores",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "embarcadores"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Embarcador",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Empresa ABC Atualizada\",\n  \"endereco\": \"Nova Rua das Indústrias, 789\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/embarcadores/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "embarcadores", "1"]
+            }
+          }
+        },
+        {
+          "name": "Deletar Embarcador",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/embarcadores/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "embarcadores", "1"]
+            }
+          }
+        },
+        {
+          "name": "Restaurar Embarcador",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/embarcadores/1/restore",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "embarcadores", "1", "restore"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚗 Motoristas",
+      "item": [
+        {
+          "name": "Listar Motoristas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/motoristas?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "motoristas"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"},
+                {"key": "nome", "value": "", "disabled": true},
+                {"key": "cpf", "value": "", "disabled": true},
+                {"key": "cidade", "value": "", "disabled": true},
+                {"key": "estado", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar Motoristas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/motoristas/search?q=motorista",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "motoristas", "search"],
+              "query": [
+                {"key": "q", "value": "motorista"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar por CPF",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/motoristas/cpf/123.456.789-10",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "motoristas", "cpf", "123.456.789-10"]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Cidade",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/motoristas/cidade/São Paulo",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "motoristas", "cidade", "São Paulo"]
+            }
+          }
+        },
+        {
+          "name": "Obter Motorista",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/motoristas/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "motoristas", "1"]
+            }
+          }
+        },
+        {
+          "name": "Criar Motorista",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João Silva\",\n  \"cpf\": \"123.456.789-10\",\n  \"cnh\": \"12345678901\",\n  \"categoria_cnh\": \"D\",\n  \"telefone\": \"(11) 99999-9999\",\n  \"email\": \"joao@email.com\",\n  \"endereco\": \"Rua dos Motoristas, 123\",\n  \"bairro\": \"Centro\",\n  \"cidade\": \"São Paulo\",\n  \"estado\": \"SP\",\n  \"cep\": \"01234-567\",\n  \"data_nascimento\": \"1980-05-15\",\n  \"data_vencimento_cnh\": \"2025-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/motoristas",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "motoristas"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Motorista",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"telefone\": \"(11) 88888-8888\",\n  \"email\": \"joao.novo@email.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/motoristas/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "motoristas", "1"]
+            }
+          }
+        },
+        {
+          "name": "Deletar Motorista",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/motoristas/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "motoristas", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📄 Notas Fiscais",
+      "item": [
+        {
+          "name": "Listar Notas Fiscais",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notasfiscais?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "notasfiscais"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"},
+                {"key": "chave_nf", "value": "", "disabled": true},
+                {"key": "cliente_id", "value": "", "disabled": true},
+                {"key": "transportadora_id", "value": "", "disabled": true},
+                {"key": "status_nf", "value": "", "disabled": true},
+                {"key": "finalizada", "value": "", "disabled": true},
+                {"key": "data_inicio", "value": "", "disabled": true},
+                {"key": "data_fim", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Chave",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notasfiscais/chave/12345678901234567890123456789012345678901234",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "notasfiscais", "chave", "12345678901234567890123456789012345678901234"]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Número e Série",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notasfiscais/numero/123/serie/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "notasfiscais", "numero", "123", "serie", "1"]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Cliente",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notasfiscais/cliente/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "notasfiscais", "cliente", "1"]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Transportadora",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notasfiscais/transportadora/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "notasfiscais", "transportadora", "1"]
+            }
+          }
+        },
+        {
+          "name": "Obter Nota Fiscal",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notasfiscais/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "notasfiscais", "1"]
+            }
+          }
+        },
+        {
+          "name": "Buscar NF com Ocorrências",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notasfiscais/1/ocorrencias",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "notasfiscais", "1", "ocorrencias"]
+            }
+          }
+        },
+        {
+          "name": "Estatísticas por Período",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notasfiscais/stats/periodo?data_inicio=2024-01-01&data_fim=2024-12-31",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "notasfiscais", "stats", "periodo"],
+              "query": [
+                {"key": "data_inicio", "value": "2024-01-01"},
+                {"key": "data_fim", "value": "2024-12-31"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Criar Nota Fiscal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chave_nf\": \"12345678901234567890123456789012345678901234\",\n  \"numero_nf\": 123,\n  \"serie_nf\": 1,\n  \"data_emissao\": \"2024-01-15\",\n  \"valor_nf\": 1500.50,\n  \"peso\": 500.0,\n  \"volume\": 10,\n  \"cliente_id\": 1,\n  \"transportadora_id\": 1,\n  \"endereco_entrega_id\": 1,\n  \"status_nf\": \"pendente\",\n  \"obs\": \"Observações sobre a nota fiscal\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notasfiscais",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "notasfiscais"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Nota Fiscal",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status_nf\": \"em_transito\",\n  \"obs\": \"Nota fiscal em trânsito\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notasfiscais/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "notasfiscais", "1"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status_nf\": \"entregue\",\n  \"data_entrega\": \"2024-01-20T14:30:00Z\",\n  \"obs\": \"Entrega realizada com sucesso\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notasfiscais/1/status",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "notasfiscais", "1", "status"]
+            }
+          }
+        },
+        {
+          "name": "Finalizar Nota Fiscal",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Entrega realizada com sucesso\",\n  \"data_finalizacao\": \"2024-01-20T15:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notasfiscais/1/finalizar",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "notasfiscais", "1", "finalizar"]
+            }
+          }
+        },
+        {
+          "name": "Associar ao Romaneio",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"romaneio_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notasfiscais/1/romaneio",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "notasfiscais", "1", "romaneio"]
+            }
+          }
+        },
+        {
+          "name": "Deletar Nota Fiscal",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notasfiscais/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "notasfiscais", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📍 Endereços de Entrega",
+      "item": [
+        {
+          "name": "Listar Endereços",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/enderecos-entrega?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "enderecos-entrega"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"},
+                {"key": "cliente_id", "value": "", "disabled": true},
+                {"key": "cidade", "value": "", "disabled": true},
+                {"key": "uf", "value": "", "disabled": true},
+                {"key": "restrito", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Cliente",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/enderecos-entrega/cliente/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "enderecos-entrega", "cliente", "1"]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Localização",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/enderecos-entrega/localizacao?cidade=São Paulo&uf=SP",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "enderecos-entrega", "localizacao"],
+              "query": [
+                {"key": "cidade", "value": "São Paulo"},
+                {"key": "uf", "value": "SP"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar Endereços Restritos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/enderecos-entrega/restritos",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "enderecos-entrega", "restritos"]
+            }
+          }
+        },
+        {
+          "name": "Obter Endereço",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/enderecos-entrega/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "enderecos-entrega", "1"]
+            }
+          }
+        },
+        {
+          "name": "Criar Endereço",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cliente_id\": 1,\n  \"endereco\": \"Rua da Entrega, 789\",\n  \"numero\": \"789\",\n  \"complemento\": \"Galpão 5\",\n  \"bairro\": \"Industrial\",\n  \"cidade\": \"São Paulo\",\n  \"uf\": \"SP\",\n  \"cep\": \"01234-567\",\n  \"contato\": \"João Recebedor\",\n  \"telefone\": \"(11) 5555-5555\",\n  \"email\": \"recebimento@cliente.com\",\n  \"horario_funcionamento\": \"08:00 às 17:00\",\n  \"restricao_veiculo\": false,\n  \"obs_restricao\": \"\",\n  \"latitude\": -23.550520,\n  \"longitude\": -46.633308\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/enderecos-entrega",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "enderecos-entrega"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Endereço",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contato\": \"Maria Recebedora\",\n  \"telefone\": \"(11) 6666-6666\",\n  \"horario_funcionamento\": \"07:00 às 18:00\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/enderecos-entrega/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "enderecos-entrega", "1"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Coordenadas",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": -23.550000,\n  \"longitude\": -46.633000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/enderecos-entrega/1/coordenadas",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "enderecos-entrega", "1", "coordenadas"]
+            }
+          }
+        },
+        {
+          "name": "Deletar Endereço",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/enderecos-entrega/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "enderecos-entrega", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 Romaneios",
+      "item": [
+        {
+          "name": "Listar Romaneios",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/romaneios?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "romaneios"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"},
+                {"key": "numero", "value": "", "disabled": true},
+                {"key": "placa_cavalo", "value": "", "disabled": true},
+                {"key": "motorista_id", "value": "", "disabled": true},
+                {"key": "data_inicio", "value": "", "disabled": true},
+                {"key": "data_fim", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Número",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/romaneios/numero/12345",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "romaneios", "numero", "12345"]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Placa",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/romaneios/placa/ABC1234",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "romaneios", "placa", "ABC1234"]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Motorista",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/romaneios/motorista/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "romaneios", "motorista", "1"]
+            }
+          }
+        },
+        {
+          "name": "Obter Romaneio",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/romaneios/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "romaneios", "1"]
+            }
+          }
+        },
+        {
+          "name": "Criar Romaneio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numero\": 12345,\n  \"unidade\": \"Centro de Distribuição\",\n  \"placa_cavalo\": \"ABC1234\",\n  \"placa_carreta\": \"XYZ5678\",\n  \"emissao\": \"2024-01-15\",\n  \"motorista_id\": 1,\n  \"capacidade_veiculo\": 5000.00,\n  \"roteirizacao\": \"manual\",\n  \"peso\": 2500.50,\n  \"cubagem\": 15.75,\n  \"doca\": \"Doca 1\",\n  \"roteirizar\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/romaneios",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "romaneios"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Romaneio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doca\": \"Doca 2\",\n  \"peso\": 3000.00,\n  \"cubagem\": 18.50\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/romaneios/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "romaneios", "1"]
+            }
+          }
+        },
+        {
+          "name": "Deletar Romaneio",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/romaneios/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "romaneios", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "⚠️ Ocorrências",
+      "item": [
+        {
+          "name": "Listar Ocorrências",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/ocorrencias?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "ocorrencias"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"},
+                {"key": "codigo", "value": "", "disabled": true},
+                {"key": "tipo", "value": "", "disabled": true},
+                {"key": "processo", "value": "", "disabled": true},
+                {"key": "finalizadora", "value": "", "disabled": true},
+                {"key": "api", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Código",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/ocorrencias/codigo/123",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "ocorrencias", "codigo", "123"]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Tipo",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/ocorrencias/tipo/entrega",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "ocorrencias", "tipo", "entrega"]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Processo",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/ocorrencias/processo/entrega",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "ocorrencias", "processo", "entrega"]
+            }
+          }
+        },
+        {
+          "name": "Buscar Finalizadoras",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/ocorrencias/finalizadoras",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "ocorrencias", "finalizadoras"]
+            }
+          }
+        },
+        {
+          "name": "Buscar para API",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/ocorrencias/api",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "ocorrencias", "api"]
+            }
+          }
+        },
+        {
+          "name": "Obter Ocorrência",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/ocorrencias/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "ocorrencias", "1"]
+            }
+          }
+        },
+        {
+          "name": "Criar Ocorrência",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": 123,\n  \"descricao\": \"Entrega realizada com sucesso\",\n  \"tipo\": \"entrega\",\n  \"processo\": \"entrega\",\n  \"finalizadora\": true,\n  \"api\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/ocorrencias",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "ocorrencias"]
+            }
+          }
+        },
+        {
+          "name": "Ativar/Desativar API",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/ocorrencias/1/toggle-api",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "ocorrencias", "1", "toggle-api"]
+            }
+          }
+        },
+        {
+          "name": "Marcar/Desmarcar Finalizadora",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/ocorrencias/1/toggle-finalizadora",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "ocorrencias", "1", "toggle-finalizadora"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔗 Vínculos Transportadora-Código",
+      "item": [
+        {
+          "name": "Listar Vínculos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/transportadoracodigo?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "transportadoracodigo"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"},
+                {"key": "transportadora_id", "value": "", "disabled": true},
+                {"key": "codigo_ocorrencia_codigo", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Estatísticas dos Vínculos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/transportadoracodigo/stats",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "transportadoracodigo", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Transportadora",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/transportadoracodigo/transportadora/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "transportadoracodigo", "transportadora", "1"]
+            }
+          }
+        },
+        {
+          "name": "Buscar por Código Ocorrência",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/transportadoracodigo/codigo/123",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "transportadoracodigo", "codigo", "123"]
+            }
+          }
+        },
+        {
+          "name": "Obter Vínculo",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/transportadoracodigo/1",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "transportadoracodigo", "1"]
+            }
+          }
+        },
+        {
+          "name": "Criar Vínculo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transportadora_id\": 1,\n  \"codigo_ocorrencia_codigo\": 123,\n  \"ativo\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/transportadoracodigo",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "transportadoracodigo"]
+            }
+          }
+        },
+        {
+          "name": "Criar Múltiplos Vínculos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transportadora_id\": 1,\n  \"codigos_ocorrencia\": [123, 124, 125],\n  \"ativo\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/transportadoracodigo/multiplos",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "transportadoracodigo", "multiplos"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "⚙️ Jobs & Integração",
+      "item": [
+        {
+          "name": "Status dos Jobs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/jobs/status",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "jobs", "status"]
+            }
+          }
+        },
+        {
+          "name": "Executar Job Manual",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transportadoraId\": 1,\n  \"force\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/jobs/run",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "jobs", "run"]
+            }
+          }
+        },
+        {
+          "name": "Parar Jobs",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/jobs/stop",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "jobs", "stop"]
+            }
+          }
+        },
+        {
+          "name": "Histórico de Jobs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/jobs/history?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "jobs", "history"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Logs de Integração",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/jobs/logs?transportadoraId=1&level=error",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "jobs", "logs"],
+              "query": [
+                {"key": "transportadoraId", "value": "1"},
+                {"key": "level", "value": "error", "disabled": true},
+                {"key": "startDate", "value": "", "disabled": true},
+                {"key": "endDate", "value": "", "disabled": true}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 Monitoramento",
+      "item": [
+        {
+          "name": "Dashboard Geral",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/monitoring/dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "monitoring", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "Métricas por Transportadora",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/monitoring/transportadora/1/metrics",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "monitoring", "transportadora", "1", "metrics"]
+            }
+          }
+        },
+        {
+          "name": "Estatísticas de Performance",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/monitoring/performance",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "monitoring", "performance"]
+            }
+          }
+        },
+        {
+          "name": "Relatório de Saúde",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/monitoring/health",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "monitoring", "health"]
+            }
+          }
+        },
+        {
+          "name": "Logs do Sistema",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/monitoring/logs?level=error&limit=50",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "monitoring", "logs"],
+              "query": [
+                {"key": "level", "value": "error"},
+                {"key": "limit", "value": "50"},
+                {"key": "startDate", "value": "", "disabled": true},
+                {"key": "endDate", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Alertas Ativos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/monitoring/alerts",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "monitoring", "alerts"]
+            }
+          }
+        },
+        {
+          "name": "Resumo Status NF",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/monitoring/nf-status",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "monitoring", "nf-status"]
+            }
+          }
+        },
+        {
+          "name": "Exportar Relatório",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/monitoring/export?format=excel&type=dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "monitoring", "export"],
+              "query": [
+                {"key": "format", "value": "excel"},
+                {"key": "type", "value": "dashboard"},
+                {"key": "startDate", "value": "", "disabled": true},
+                {"key": "endDate", "value": "", "disabled": true}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Configuração do Monitoramento",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/monitoring/config",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "monitoring", "config"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Configuração",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alertas_email\": true,\n  \"intervalo_verificacao\": 300,\n  \"limite_memoria\": 80,\n  \"limite_cpu\": 90\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/monitoring/config",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_prefix}}", "monitoring", "config"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔧 Utilitários",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Documentação API (JSON)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api-docs.json",
+              "host": ["{{base_url}}"],
+              "path": ["api-docs.json"]
+            }
+          }
+        },
+        {
+          "name": "Swagger UI",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api-docs",
+              "host": ["{{base_url}}"],
+              "path": ["api-docs"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
